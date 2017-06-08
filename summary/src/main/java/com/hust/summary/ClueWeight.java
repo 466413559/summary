@@ -53,6 +53,7 @@ public class ClueWeight {
 	private List<String> loadClueWord(String path){
 		List<String> list  = new ArrayList<>();
 		//读取线索词
+		list =FileIO.readFromFile(path);
 		return list;
 	}
 	

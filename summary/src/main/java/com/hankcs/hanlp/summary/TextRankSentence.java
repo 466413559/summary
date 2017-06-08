@@ -321,4 +321,8 @@ public class TextRankSentence
         return resultBuffer;
     }
 
+	public double[] getVertex() {
+		return vertex;
+	}
+    
 }

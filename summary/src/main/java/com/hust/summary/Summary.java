@@ -1,8 +1,11 @@
 package com.hust.summary;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeMap;
 
 import com.hankcs.hanlp.dictionary.stopword.CoreStopWordDictionary;
 import com.hankcs.hanlp.seg.common.Term;
@@ -78,12 +81,15 @@ public class Summary {
 	 */
 	private double[] extra_weight;
 	
+	private double[] total_weight;
+	
 	public Summary(String path){
 		List<String> doc = new LinkedList<>();
 		//读取文档
 		/**
 		 * 读取文档
 		 */
+		doc = FileIO.readFromFile(path);
 		//获取标题
 		List<Term> termList = StandardTokenizer.segment(doc.remove(0).toCharArray());
 		this.title = new LinkedList<>();
@@ -106,6 +112,9 @@ public class Summary {
 		}
 		this.D = this.sentences.size();	
 		this.docs = convertSentenceListToDocument(this.sentences);
+		
+		extra_weight = new double[D];
+		total_weight =  new double[D];
 	}
 	
 	/**
@@ -136,6 +145,11 @@ public class Summary {
 		return cw.getClueWeight();
 	}
 	
+	private double[] getTextRankWeight(){
+		TextRankSentence ts = new TextRankSentence(docs);
+		return ts.getVertex();
+	}
+	
 	/**
 	 * 使用自定义线索词典获取线索权重
 	 * @param path
@@ -162,6 +176,115 @@ public class Summary {
 		cw.caculate();
 		return cw.getClueWeight();
 	}
+	
+	
+	
+	/**
+	 * 采用默认设置对文章排序摘要
+	 */
+	public void simpleSummary(){
+		double[] title_weight = getTitleWeight();
+		double[] position_weight = getPositionWeight();
+		double[] clue_weight = getClueWeight();
+		double[] textRank_weight = getTextRankWeight();
+		int i = 0;
+		//计算其他因子的权重
+		for (double d : extra_weight) {
+			extra_weight[i] = k_position*position_weight[i]+k_clue*clue_weight[i]+k_title*title_weight[i];
+			total_weight[i] = k_extra*extra_weight[i]+k_rank*textRank_weight[i];
+			++i;
+		}
+	}
+	/**
+	 * 设置选用哪些因子来摘要，并指定对应的调整因子，若为null则表示不要该种因子（标题因子，位置因子，线索因子的和推荐为1）
+	 * @param k_title 标题因子，为null则表示不考虑该因子的影响
+	 * @param k_position 位置因子，为null则表示不考虑该因子的影响
+	 * @param k_clue 线索因子，为null则表示不考虑该因子的影响
+	 * @param clue 线索词，若为null则表示使用默认线索词
+	 * @param flag 线索词的加载方式，ture为追加的方式，false为覆盖的方式
+	 * @param k_extra 影响因子的调整参数   若为null则使用默认参数
+	 * @param k_rank textRank的调整参数  若为null则使用默认参数
+	 */
+	public void diySummary(Double k_title,Double k_position,Double k_clue,List<String> clue,Boolean flag,Double k_extra,Double k_rank){
+		double[] title_weight = {0};
+		double[] position_weight = {0};
+		double[] clue_weight = {0};
+		if(null != k_title){
+			setK_title(k_title);
+			title_weight = getTitleWeight();
+		}
+		if(null != k_position){
+			setK_position(k_position);
+			position_weight = getPositionWeight();
+		}
+		if(null!= k_clue){
+			setK_clue(k_clue);
+			if(null != clue){
+				clue_weight = getClueWeight(clue,flag);
+			}else{
+				clue_weight = getClueWeight();
+			}
+		}		
+		if(null != k_extra){
+			setK_extra(k_extra);
+		}
+		if(null != k_rank){
+			setK_rank(k_rank);
+		}
+		
+		double[] textRank_weight = getTextRankWeight();
+		
+		int i = 0;
+		//计算其他因子的权重
+		for (double d : extra_weight) {
+			extra_weight[i] = k_position*position_weight[i]+k_clue*clue_weight[i]+k_title*title_weight[i];
+			total_weight[i] = k_extra*extra_weight[i]+k_rank*textRank_weight[i];
+			++i;
+		}
+	}
+	
+	/**
+	 * 获取前num重要的句子
+	 * @param num
+	 * @return
+	 */
+	public List<String> getTopSentences(int num){
+		TreeMap<Double, Integer> top = new TreeMap<Double, Integer>(Collections.reverseOrder());
+		List<String> topSentences =  new LinkedList<>();
+		for (int i = 0; i < D; ++i)
+        {
+            top.put(total_weight[i], i);
+        }
+		num = num<=top.size()?num:top.size();
+		Iterator<Integer> it = top.values().iterator();
+		for(int i =0 ; i < num; ++i){
+			String str = sentences.get(it.next());
+			topSentences.add(str);
+		}
+		return topSentences;
+	}
+	
+	/**
+	 * 根据文章长度自动选择要获取的句子个数
+	 * @return
+	 */
+	public List<String> getTopSentences(){
+		int num = 0;
+		if(D <= 2){
+			num = 1;
+		}else if(D <= 7){
+			num = 2;
+		}else{
+			num = 3;
+		}		
+		return getTopSentences(num);
+	}
+	
+	
+	
+	
+	
+	
 	/**
      * 将句子列表转化为文档
      *
