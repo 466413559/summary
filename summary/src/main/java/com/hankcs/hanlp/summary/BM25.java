@@ -105,7 +105,8 @@ public class BM25
         {
             String word = entry.getKey();
             Integer freq = entry.getValue();
-            idf.put(word, Math.log(D - freq + 0.5) - Math.log(freq + 0.5));
+           	idf.put(word, Math.log(D - freq + 0.5) - Math.log(freq + 0.5));
+           
         }
     }
 

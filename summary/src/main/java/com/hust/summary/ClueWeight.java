@@ -1,6 +1,7 @@
 package com.hust.summary;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -32,6 +33,8 @@ public class ClueWeight {
 	 */
 	private List<String> clue_word;
 	
+	private List<String> key_word;
+	
 	//初始化
 	/**
 	 * 初始化
@@ -47,6 +50,7 @@ public class ClueWeight {
 			cluePath = path;
 		}		
 		clue_word = loadClueWord(cluePath);
+		key_word = new LinkedList<>();
 	}
 	
 	//加载线索词
@@ -59,11 +63,12 @@ public class ClueWeight {
 	
 	//加载线索词
 	/**
-	 * 以追加的方式添加自定义线索词
+	 * 以追加的方式添加自定义线索词(默认为 添加的是关键词)
 	 * @param word
 	 */
 	public void addClueWord(List<String> word){
-		clue_word.addAll(word);
+	//	clue_word.addAll(word);
+		key_word.addAll(word);
 	}
 	
 	//加载线索词
@@ -86,8 +91,20 @@ public class ClueWeight {
 					clue_weight[count] = 1;
 					break;
 				}
-			}
+			}			
 			++count;
+		}
+		for(String word : key_word){
+			int n = -1;
+			for(String sentence: docs){
+				n++;
+				if(sentence.indexOf(word)<0){
+					continue;
+				}else{
+					clue_weight[n] = 1;
+					break;
+				}
+			}
 		}
 	}
 	

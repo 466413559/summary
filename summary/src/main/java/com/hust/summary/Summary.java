@@ -2,9 +2,13 @@ package com.hust.summary;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import com.hankcs.hanlp.dictionary.stopword.CoreStopWordDictionary;
@@ -135,6 +139,7 @@ public class Summary {
 		return cw.getClueWeight();
 	}
 	
+	
 	private double[] getTextRankWeight(){
 		TextRankSentence ts = new TextRankSentence(docs);
 		return ts.getVertex();
@@ -187,6 +192,29 @@ public class Summary {
 			++i;
 		}
 	}
+	
+	/**
+	 * 采用textRank和词特征结合的方式提取摘要
+	 * 将关键词作为线索词来计算权重
+	 */
+	public void summary(){
+		double[] title_weight = getTitleWeight();
+		double[] position_weight = getPositionWeight();
+		double[] textRank_weight = getTextRankWeight();
+		initK_extra(textRank_weight);
+		
+		List<String> keyWords = getMostFrequrentWord(docs, 7);
+ 		double[] clue_weight = getClueWeight(keyWords,true);
+		int i = 0;
+		//计算其他因子的权重
+		for (double d : extra_weight) {
+			extra_weight[i] = k_position*position_weight[i]+k_clue*clue_weight[i]+k_title*title_weight[i];
+			total_weight[i] = k_extra*extra_weight[i]+textRank_weight[i];
+			System.out.println("第"+i+"个句子的位置权重"+position_weight[i]+"线索权重"+clue_weight[i]+"标题权重"+title_weight[i]+"额外权重"+extra_weight[i]+"textRank权重"+textRank_weight[i]+"最后权重"+total_weight[i]);
+			++i;
+		}
+	}
+	
 	/**
 	 * 设置选用哪些因子来摘要，并指定对应的调整因子，若为null则表示不要该种因子（标题因子，位置因子，线索因子的和推荐为1）
 	 * @param k_title 标题因子，为null则表示不考虑该因子的影响
@@ -347,6 +375,32 @@ public class Summary {
 		this.k_clue = k_clue;
 	}
     
-    
+    private List<String> getMostFrequrentWord(List<List<String>> docs,int num){
+    	Map<String, Integer> words = new HashMap<>(1024);
+    	for (List<String> list : docs) {
+			for (String string : list) {
+				if(!words.containsKey(string)){
+					words.put(string, 1);
+				}else{
+					words.put(string, words.get(string)+1);
+				}
+			}
+		}
+    	List<Map.Entry<String, Integer>> list = new ArrayList<Map.Entry<String,Integer>>(words.entrySet());
+    	Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {  
+    		  
+            @Override  
+            public int compare(Entry<java.lang.String, Integer> arg0,  
+                    Entry<java.lang.String, Integer> arg1) {  
+                return arg1.getValue() - arg0.getValue();  
+            }  
+        }); 
+    	List<String> keyWords = new LinkedList<>();
+    	for (int i = 0; i < (num<words.size()?num:words.size()); i++) {
+			keyWords.add(list.get(i).getKey());
+			System.out.println("第"+i+"个关键词："+list.get(i).getKey()+"  词频："+list.get(i).getValue());
+		}
+    	return keyWords;
+    }
     
 }

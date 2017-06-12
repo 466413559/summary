@@ -96,6 +96,12 @@ public class TextRankSentence
             vertex[cnt] = 1.0;
             ++cnt;
         }
+        for (int i = 0; i < D; i++) {
+			for (int j = 0; j < D; j++) {
+				System.out.print(weight[i][j]+"  ");
+			}
+			System.out.println();
+		}
         for (int _ = 0; _ < max_iter; ++_)
         {
             double[] m = new double[D];

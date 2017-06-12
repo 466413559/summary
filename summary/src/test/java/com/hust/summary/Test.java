@@ -8,8 +8,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class Test {
 	public static void main(String[] args) {
@@ -21,7 +28,7 @@ public class Test {
 			List<String> doc = new LinkedList<>();
 			doc = FileIO.readFromFile(docPath+string);
 			Summary s = new Summary(doc);
-			s.simpleSummary();
+			s.summary();
 			List<String> list = s.getSummary(null);
 			writeFile(summaryPath+string, list);
 		}
