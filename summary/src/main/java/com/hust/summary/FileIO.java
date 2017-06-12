@@ -88,7 +88,7 @@ public class FileIO {
 						&& !line.equals("	") && !line.equals("  ")
 						&& !line.equals("   ") && !line.equals("    ")
 						&& !line.equals("     ")) {
-					System.out.println(line);
+				//	System.out.println(line);
 					list.add(line);
 				}
 			}

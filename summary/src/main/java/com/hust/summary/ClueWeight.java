@@ -20,7 +20,7 @@ public class ClueWeight {
 	/**
 	 * 默认线索词存放路径
 	 */
-	private static String cluePath = "data/dictionary/clue/clue.txt";
+	private static String cluePath = "src/main/java/data/dictionary/clue/clue.txt";
 	
 	/**
 	 * （句子）文档

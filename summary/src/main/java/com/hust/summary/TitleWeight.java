@@ -29,9 +29,9 @@ public class TitleWeight {
 	/**
 	 * 阈值
 	 * 句子包含标题中的词语个数占标题总词语个数比
-	 * 默认为0.75
+	 * 默认为0.6
 	 */
-	private double threshold = 0.75;
+	private double threshold = 0.6;
 	
 	//初始化
 	/**
@@ -44,6 +44,11 @@ public class TitleWeight {
 		this.title = title;
 		int d = docs.size();
 		title_weight = new double[d];
+		System.out.print("标题：");
+		for (String string : title) {
+			System.out.print(string+" ");
+		}
+		System.out.println();
 	}
 	
 	//计算标题权重
@@ -67,17 +72,18 @@ public class TitleWeight {
 					count++;
 				}
 			}
-			if(count/total >= threshold){
-				title_weight[i++] = 1;
+			System.out.println("第"+i+"句包含标题词语的个数："+count);
+			if((count*1.0)/total >= threshold){
+				title_weight[i] = 1;
 			}
-			
+			i++;			
 		}
 	}
 	
 	//设置阈值
 	/**
 	 * 设置阈值
-	 * @param threshold 阈值 默认为0.75
+	 * @param threshold 阈值 默认为0.6
 	 */
 	public void setThresHold(double threshold){
 		this.threshold = threshold;

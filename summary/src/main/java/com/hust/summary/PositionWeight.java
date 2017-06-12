@@ -47,6 +47,19 @@ public class PositionWeight {
 			position_weight[index+size-1] += 0.5;
 			index += size;
 		}
+		//首段和尾段所有句子权重+1和0.5
+		String[] first = sentences.get(0);
+		for(int i = 0; i < first.length; i++){
+			position_weight[i] += 1;
+		}
+		if(sentences.size() >= 2){
+			int n = sentences.size()-1;
+			String[] last = sentences.get(n);
+			for(int i = 0; i< last.length; i++){
+				position_weight[index-last.length+i] += 0.5;
+			}
+		}
+		
 	}
 
 	public double[] getPosition_weight() {

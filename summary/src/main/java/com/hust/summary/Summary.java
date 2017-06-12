@@ -25,14 +25,8 @@ public class Summary {
 	private String path;
 	
 	/**
-	 * textRank权重的平衡因子
-	 * 默认为1
-	 */
-	private double k_rank = 1;
-	
-	/**
 	 * 其他因子的平衡因子
-	 * 默认为1
+	 * 默认为textRank权重的平均值
 	 */
 	private double k_extra = 1;
 	
@@ -40,19 +34,19 @@ public class Summary {
 	 * 标题权重的调节因子
 	 * 默认为0.5
 	 */
-	private double k_title;
+	private double k_title = 0.5;
 	
 	/**
 	 * 位置权重的调节因子
 	 * 默认为0.25
 	 */
-	private double k_position;
+	private double k_position = 0.25;
 	
 	/**
 	 * 线索的调节因子
 	 * 默认为0.25
 	 */
-	private double k_clue;
+	private double k_clue = 0.25;
 	
 	/**
 	 * （段落（句子））文档
@@ -83,13 +77,7 @@ public class Summary {
 	
 	private double[] total_weight;
 	
-	public Summary(String path){
-		List<String> doc = new LinkedList<>();
-		//读取文档
-		/**
-		 * 读取文档
-		 */
-		doc = FileIO.readFromFile(path);
+	public Summary(List<String> doc){
 		//获取标题
 		List<Term> termList = StandardTokenizer.segment(doc.remove(0).toCharArray());
 		this.title = new LinkedList<>();
@@ -115,6 +103,7 @@ public class Summary {
 		
 		extra_weight = new double[D];
 		total_weight =  new double[D];
+		this.summary = new TreeMap<Integer,String>();
 	}
 	
 	/**
@@ -131,6 +120,7 @@ public class Summary {
 	 */
 	private double[] getTitleWeight(){
 		TitleWeight tw = new TitleWeight(docs,title);
+		tw.caculate();
 		return tw.getTitleWeight();
 	}
 	
@@ -187,11 +177,13 @@ public class Summary {
 		double[] position_weight = getPositionWeight();
 		double[] clue_weight = getClueWeight();
 		double[] textRank_weight = getTextRankWeight();
+		initK_extra(textRank_weight);
 		int i = 0;
 		//计算其他因子的权重
 		for (double d : extra_weight) {
 			extra_weight[i] = k_position*position_weight[i]+k_clue*clue_weight[i]+k_title*title_weight[i];
-			total_weight[i] = k_extra*extra_weight[i]+k_rank*textRank_weight[i];
+			total_weight[i] = k_extra*extra_weight[i]+textRank_weight[i];
+			System.out.println("第"+i+"个句子的位置权重"+position_weight[i]+"线索权重"+clue_weight[i]+"标题权重"+title_weight[i]+"额外权重"+extra_weight[i]+"textRank权重"+textRank_weight[i]+"最后权重"+total_weight[i]);
 			++i;
 		}
 	}
@@ -203,9 +195,8 @@ public class Summary {
 	 * @param clue 线索词，若为null则表示使用默认线索词
 	 * @param flag 线索词的加载方式，ture为追加的方式，false为覆盖的方式
 	 * @param k_extra 影响因子的调整参数   若为null则使用默认参数
-	 * @param k_rank textRank的调整参数  若为null则使用默认参数
 	 */
-	public void diySummary(Double k_title,Double k_position,Double k_clue,List<String> clue,Boolean flag,Double k_extra,Double k_rank){
+	public void diySummary(Double k_title,Double k_position,Double k_clue,List<String> clue,Boolean flag,Double k_extra){
 		double[] title_weight = {0};
 		double[] position_weight = {0};
 		double[] clue_weight = {0};
@@ -227,18 +218,14 @@ public class Summary {
 		}		
 		if(null != k_extra){
 			setK_extra(k_extra);
-		}
-		if(null != k_rank){
-			setK_rank(k_rank);
-		}
-		
+		}		
 		double[] textRank_weight = getTextRankWeight();
-		
+		initK_extra(textRank_weight);;
 		int i = 0;
 		//计算其他因子的权重
 		for (double d : extra_weight) {
 			extra_weight[i] = k_position*position_weight[i]+k_clue*clue_weight[i]+k_title*title_weight[i];
-			total_weight[i] = k_extra*extra_weight[i]+k_rank*textRank_weight[i];
+			total_weight[i] = k_extra*extra_weight[i]+textRank_weight[i];
 			++i;
 		}
 	}
@@ -256,12 +243,35 @@ public class Summary {
             top.put(total_weight[i], i);
         }
 		num = num<=top.size()?num:top.size();
-		Iterator<Integer> it = top.values().iterator();
+		Iterator<Integer> it = top.values().iterator();		
 		for(int i =0 ; i < num; ++i){
-			String str = sentences.get(it.next());
+			int index = it.next();			
+			String str = sentences.get(index);
+			this.summary.put(index, str);
 			topSentences.add(str);
 		}
 		return topSentences;
+	}
+	
+	
+	private TreeMap<Integer,String> summary;
+	/**
+	 * 获取前num个重要的句子，并按照原文的顺序排序
+	 * @param num num为null时采用默认根据文章长度选择要获取句子数;
+	 * @return
+	 */
+	public List<String> getSummary(Integer num){
+		if(null == num){
+			getTopSentences();
+		}else{
+			getTopSentences(num);
+		}
+		List<String> summary =  new LinkedList<>();
+		Iterator<String> it = this.summary.values().iterator();
+		while(it.hasNext()){
+			summary.add(it.next());
+		}
+		return summary;
 	}
 	
 	/**
@@ -309,11 +319,18 @@ public class Summary {
         }
         return docs;
     }
-
-	public void setK_rank(double k_rank) {
-		this.k_rank = k_rank;
-	}
-
+    /**
+     * 初始化额外权重调节因子
+     * @param textRank textRank权重
+     */
+    private void initK_extra(double[] textRank_weight){
+    	double weight = 0;
+    	for (double d : textRank_weight) {
+			weight+=d;
+		}
+    	k_extra = weight/textRank_weight.length;
+    }
+    
 	public void setK_extra(double k_extra) {
 		this.k_extra = k_extra;
 	}

@@ -8,17 +8,21 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Test {
 	public static void main(String[] args) {
-		String docPath = "";
-		String summaryPath = "";
+		String docPath = "D:/summaryTest/";
+		String summaryPath = "D:/summaryResult/";
 		List<String> filePath = FileIO.getFileName(docPath);
 		for (String string : filePath) {
-			Summary s = new Summary(string);
+		//	System.out.println(string);
+			List<String> doc = new LinkedList<>();
+			doc = FileIO.readFromFile(docPath+string);
+			Summary s = new Summary(doc);
 			s.simpleSummary();
-			List<String> list = s.getTopSentences();
+			List<String> list = s.getSummary(null);
 			writeFile(summaryPath+string, list);
 		}
 		
